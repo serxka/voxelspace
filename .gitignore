@@ -1,0 +1,4 @@
+**/*.o
+stb_image.h
+voxelspace
+
