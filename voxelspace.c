@@ -33,6 +33,8 @@ typedef struct {
 
 camera_t camera;
 
+double val = 240.0;
+
 static void die(const char *fmt, ...) {
 	va_list args;
 	va_start (args, fmt);
@@ -112,6 +114,8 @@ void update(void) {
 	camera.x += forward * sin(camera.yaw) * camera.scale;
 	camera.y += forward * cos(camera.yaw) * camera.scale;
 	
+	val += (key_states[SDL_SCANCODE_T] + -1 * key_states[SDL_SCANCODE_G]) * 1.0;
+
 	// Camera height
 	camera.height += (key_states[SDL_SCANCODE_E] + -1.0 * key_states[SDL_SCANCODE_Q]) * 2.0;
 	uint8_t height_sample = sample(greyscale_bmp, mapsize, 1, (int)camera.x, (int)camera.y) + 10;
@@ -119,18 +123,18 @@ void update(void) {
 		camera.height = height_sample;
 }
 
-static void draw_column(int x, uint32_t ybot, uint32_t ytop, uint32_t col) {
+static void draw_column(int x, uint16_t ybot, uint16_t ytop, uint32_t col) {
 	if (ytop > ybot)
 		return;
 	SDL_SetRenderDrawColor(renderer, (col >> 16) & 0xFF, (col >> 8) & 0xFF, col & 0xFF, SDL_ALPHA_OPAQUE);
-	SDL_RenderDrawLine(renderer, x, ybot + 1, x, ytop);
+	SDL_RenderDrawLine(renderer, x, ybot, x, CLAMP(ytop, 0, win_h));
 }
 
 // Uses a disgusting amount of floating point math, ideally should use none
 // TODO: add LOD, render less often the further away
 void draw(void) {
 	// Y-buffer
-	uint32_t ybuf[win_w];
+	uint16_t ybuf[win_w];
 	for (int i = 0; i < win_w; ++i)
 		ybuf[i] = win_h;
 	
@@ -155,7 +159,7 @@ void draw(void) {
 		// Draw the columns left to right, starting from the top of the highest pixel
 		for (int i = 0; i < win_w; ++i) {
 			uint8_t height_sample = sample(greyscale_bmp, mapsize, 1, (int)splx, (int)sply);
-			uint32_t height_screen = (camera.height - (double)height_sample) * (1.0 / (double)z * 240.0) + camera.horizon;
+			uint16_t height_screen = (camera.height - (double)height_sample) * (1.0 / (double)z * val) + camera.horizon;
 			uint32_t diffuse_sample = sample(level_bmp, mapsize, 3, (int)splx, (int)sply);
 			
 			draw_column(i, ybuf[i], height_screen, diffuse_sample);
